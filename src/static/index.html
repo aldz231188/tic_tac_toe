@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Крестики-Нолики</title>
+  <style>
+    table { border-collapse: collapse; margin-top: 20px; }
+    td {
+      width: 60px; height: 60px;
+      text-align: center; vertical-align: middle;
+      border: 1px solid #333;
+      font-size: 32px; cursor: pointer;
+    }
+    button { margin-top: 20px; }
+  </style>
+</head>
+<body>
+  <h1>Крестики-Нолики</h1>
+  <button onclick="newGame()">Новая игра</button>
+  <table id="board"></table>
+  <div id="message" style="margin-top: 15px; font-weight: bold; color: darkblue;"></div>
+
+  <script>
+    let gameId = null;
+    let board = [
+      ["", "", ""],
+      ["", "", ""],
+      ["", "", ""]
+    ];
+
+    function showMessage(text) {
+      document.getElementById("message").textContent = text;
+    }
+
+    function renderBoard() {
+      const table = document.getElementById("board");
+      table.innerHTML = "";
+      board.forEach((row, i) => {
+        const tr = document.createElement("tr");
+        row.forEach((cell, j) => {
+          const td = document.createElement("td");
+          td.textContent = cell;
+          td.onclick = () => makeMove(i, j);
+          tr.appendChild(td);
+        });
+        table.appendChild(tr);
+      });
+    }
+
+    async function newGame() {
+      const res = await fetch("/new-game", { method: "POST" });
+      const data = await res.json();
+      gameId = data.id;
+      board = [["", "", ""], ["", "", ""], ["", "", ""]];
+      renderBoard();
+      showMessage("Новая игра начата (ID: " + gameId + ")");
+    }
+
+    async function makeMove(i, j) {
+    //   if (!gameId || board[i][j] !== "") return;
+      board[i][j] = "X";
+      renderBoard();
+      
+
+      const res = await fetch(`/game/${gameId}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ board })
+      });
+
+      if (!res.ok) {
+        const errorText = await res.text();
+        showMessage("Ошибка: " + errorText);
+        return;
+      }
+
+      const data = await res.json();
+      board = data.board;
+      renderBoard();
+      showMessage(data.message);
+    }
+
+    // renderBoard();
+  </script>
+</body>
+</html>
